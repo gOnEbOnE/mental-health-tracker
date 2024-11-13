@@ -14,6 +14,10 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils.html import strip_tags
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+from django.contrib.auth import logout as auth_logout
 
 # Create your views here.
 def logout_user(request):
@@ -80,6 +84,41 @@ def show_xml(request):
 def show_json(request):
     data = MoodEntry.objects.filter(user=request.user)
     return HttpResponse(serializers.serialize("json", data), content_type="application/json")
+
+@csrf_exempt
+def create_mood_flutter(request):
+    if request.method == 'POST':
+
+        data = json.loads(request.body)
+        new_mood = MoodEntry.objects.create(
+            user=request.user,
+            mood=data["mood"],
+            mood_intensity=int(data["mood_intensity"]),
+            feelings=data["feelings"]
+        )
+
+        new_mood.save()
+
+        return JsonResponse({"status": "success"}, status=200)
+    else:
+        return JsonResponse({"status": "error"}, status=401)
+
+@csrf_exempt
+def logout(request):
+    username = request.user.username
+
+    try:
+        auth_logout(request)
+        return JsonResponse({
+            "username": username,
+            "status": True,
+            "message": "Logout berhasil!"
+        }, status=200)
+    except:
+        return JsonResponse({
+        "status": False,
+        "message": "Logout gagal."
+        }, status=401)
 
 def create_mood_entry(request):
     form = MoodEntryForm(request.POST or None)
